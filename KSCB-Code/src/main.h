@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "TM1637Display.h"
 
-#define DEBUG_IO
+// #define DEBUG
 
 #define PIN_LED_BUILTIN 13
 

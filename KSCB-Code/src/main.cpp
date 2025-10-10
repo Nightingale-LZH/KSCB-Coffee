@@ -1,9 +1,27 @@
 #include "main.h"
 
-#ifdef DEBUG_IO
+#ifndef DEBUG
+
+void setup() {
+
+}
+
+void loop() {
+
+}
+
+
+
+
+
+
+
+#endif  //  not DEBUG
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#ifdef DEBUG
 
 //  DEBUG OPTIONS
-// #define DEBUG_LED
+#define DEBUG_LED
 // #define DEBUG_MOTOR
 // #define DEBUG_BUTTON
 #define DEBUG_DISPLAY
@@ -89,48 +107,27 @@ void loop() {
 
     #ifdef DEBUG_DISPLAY
     display.setBrightness(0x0f);
-    
-    display.showNumberDecEx(1, 0b10000000);
-    delay(1000);
-    display.showNumberDecEx(2, 0b01000000);
-    delay(1000);
-    display.showNumberDecEx(3, 0b00100000);
-    delay(1000);
-    display.showNumberDecEx(4, 0b00010000);
-    delay(1000);
+
+    display.showNumberDecEx(0000, TM1637_DOT_BYTECODE);
+    delay(500);
+    display.showNumberDecEx(1111);
+    delay(500);
+    display.showNumberDecEx(2222, TM1637_DOT_BYTECODE);
+    delay(500);
+    display.showNumberDecEx(3333);
+    delay(500);
+    display.showNumberDecEx(4444, TM1637_DOT_BYTECODE);
+    delay(500);
+    display.showNumberDecEx(5555);
+    delay(500);
+    display.showNumberDecEx(6666, TM1637_DOT_BYTECODE);
+    delay(500);
+    display.showNumberDecEx(7777);
+    delay(500);
+    display.showNumberDecEx(8888, TM1637_DOT_BYTECODE);
+    delay(500);
+    display.showNumberDecEx(9999);
+    delay(500);
     #endif  //  DEBUG_DISPLAY
 }
-
-#else
-
-void setup() {
-    // pinMode(PIN_L298N_ENA, OUTPUT);
-    // pinMode(PIN_L298N_IN1, OUTPUT);
-    // pinMode(PIN_L298N_IN2, OUTPUT);
-    // pinMode(PIN_BUILTIN_LED, OUTPUT);
-
-    // // Motor Forward Direcction
-    // digitalWrite(PIN_L298N_IN1, HIGH);
-    // digitalWrite(PIN_L298N_IN2, LOW);
-
-}
-
-void loop() {
-    // unsigned int delay_interval = map(
-    //     analogRead(PIN_POT_SPEED),
-    //     0, 1024, 
-    //     0, 10000
-    // );
-
-    // digitalWrite(PIN_L298N_ENA, LOW);
-    // digitalWrite(PIN_BUILTIN_LED, LOW);
-    // delay(delay_interval);
-
-    // digitalWrite(PIN_L298N_ENA, HIGH);
-    // digitalWrite(PIN_BUILTIN_LED, HIGH);
-    // delay(200);
-
-}
-
 #endif // DEBUG_IO
-
