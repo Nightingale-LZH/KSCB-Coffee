@@ -23,8 +23,8 @@ void L298NSingle::forward_on() {
 }
 
 void L298NSingle::backward_on() {
-    digitalWrite(this->pin_in1, HIGH);
-    digitalWrite(this->pin_in2, LOW);
+    digitalWrite(this->pin_in1, LOW);
+    digitalWrite(this->pin_in2, HIGH);
 
     digitalWrite(this->pin_ena, HIGH);
 }

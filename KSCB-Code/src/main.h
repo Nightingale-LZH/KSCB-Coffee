@@ -11,7 +11,9 @@
 #include "DisplayManager.h"
 #include "PumpManager.h"
 
+// #define MAIN
 // #define DEBUG
+#define CALIBRATE
 
 //  +---------------------------------------------------------------------------------------------+
 //  |                                              IO                                             |

@@ -1,6 +1,6 @@
 #include "main.h"
 
-#ifndef DEBUG
+#ifdef MAIN
 
 void setup() {
 }
@@ -306,8 +306,49 @@ void built_in_led_update() {
     }
 }
 
-#endif  //  not DEBUG
+#endif  //  MAIN
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef CALIBRATE
+
+#define ON_DURATION_MS 1000
+#define OFF_DURATION_MS 500
+#define N_PULSE 20
+
+void setup() {
+    display.showNumberDec(0);
+    
+    for (int i = 0; i < N_PULSE; i++) {
+        delay(OFF_DURATION_MS);
+        pump.forward_on();
+        led_motor.on();
+        delay(ON_DURATION_MS);
+        pump.off();
+        led_motor.off();
+
+        display.showNumberDec(i + 1);
+    }
+
+    led_fin.on();
+}
+
+void loop() {
+    if (btn_plus.is_pressed()) {
+        pump.forward_on();
+        led_motor.on();
+    } else if (btn_minus.is_pressed()) {
+        pump.backward_on();
+        led_motor.on();
+    } else {
+        pump.off();
+        led_motor.off();
+    }
+    delay(100);
+}
+
+#endif  //  CALIBRATE
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 #ifdef DEBUG
 
 //  DEBUG OPTIONS
