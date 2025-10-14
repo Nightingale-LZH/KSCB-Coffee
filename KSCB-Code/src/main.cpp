@@ -120,9 +120,8 @@ void main_loop_update() {
         is_showing_brewing_time_left = true;
         is_showing_brewing_volumn_left = false;
 
-        // TODO: Do the actual calculation later
-        pump_on_duration_ms = 50;
-        pump_off_duration_ms = 99950;
+        pump_on_duration_ms = get_pump_on_duration_ms(brewing_volumn_ml, brewing_time_mins);
+        pump_off_duration_ms = get_pump_off_duration_ms(brewing_volumn_ml, brewing_time_mins);
         pump_manager.reset_pulse_count();
         pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
 
@@ -306,14 +305,12 @@ void built_in_led_update() {
     }
 }
 
-#endif  //  MAIN
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+#elif defined(CALIBRATE)
 
-#ifdef CALIBRATE
-
-#define ON_DURATION_MS 1000
+#define ON_DURATION_MS 200
 #define OFF_DURATION_MS 500
-#define N_PULSE 20
+#define N_PULSE 0
 
 void setup() {
     display.showNumberDec(0);
@@ -346,10 +343,8 @@ void loop() {
     delay(100);
 }
 
-#endif  //  CALIBRATE
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-#ifdef DEBUG
+#elif defined(DEBUG)
 
 //  DEBUG OPTIONS
 #define DEBUG_LED
