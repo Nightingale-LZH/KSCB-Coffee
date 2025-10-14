@@ -1,6 +1,6 @@
 #include "main.h"
 
-#ifndef DEBUG
+#ifdef MAIN
 
 void setup() {
 }
@@ -120,9 +120,8 @@ void main_loop_update() {
         is_showing_brewing_time_left = true;
         is_showing_brewing_volumn_left = false;
 
-        // TODO: Do the actual calculation later
-        pump_on_duration_ms = 50;
-        pump_off_duration_ms = 99950;
+        pump_on_duration_ms = get_pump_on_duration_ms(brewing_volumn_ml, brewing_time_mins);
+        pump_off_duration_ms = get_pump_off_duration_ms(brewing_volumn_ml, brewing_time_mins);
         pump_manager.reset_pulse_count();
         pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
 
@@ -306,9 +305,46 @@ void built_in_led_update() {
     }
 }
 
-#endif  //  not DEBUG
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-#ifdef DEBUG
+#elif defined(CALIBRATE)
+
+#define ON_DURATION_MS 200
+#define OFF_DURATION_MS 500
+#define N_PULSE 0
+
+void setup() {
+    display.showNumberDec(0);
+    
+    for (int i = 0; i < N_PULSE; i++) {
+        delay(OFF_DURATION_MS);
+        pump.forward_on();
+        led_motor.on();
+        delay(ON_DURATION_MS);
+        pump.off();
+        led_motor.off();
+
+        display.showNumberDec(i + 1);
+    }
+
+    led_fin.on();
+}
+
+void loop() {
+    if (btn_plus.is_pressed()) {
+        pump.forward_on();
+        led_motor.on();
+    } else if (btn_minus.is_pressed()) {
+        pump.backward_on();
+        led_motor.on();
+    } else {
+        pump.off();
+        led_motor.off();
+    }
+    delay(100);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#elif defined(DEBUG)
 
 //  DEBUG OPTIONS
 #define DEBUG_LED
