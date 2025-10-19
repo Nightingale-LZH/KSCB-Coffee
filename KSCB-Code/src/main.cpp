@@ -192,39 +192,70 @@ void main_loop_update() {
     }
 
     //  ------- Weighting -------
-    // TODO: Adding measuring function
 
     STATE(ML_weight_prep) {
+        curr_volumn_ul = 0;
+        refresh_display_meansuring(curr_volumn_ul);
 
         TO(ML_weight)
     }
 
     STATE(ML_weight) {
+        refresh_display_meansuring_scheduled(curr_volumn_ul);
+
         WHEN(btn_change.is_pressed()) TO(ML_C2);
-        WHEN(btn_plus  .is_pressed()) { pump_manager.override_forward_on();  TO(ML_P2); }
-        WHEN(btn_minus .is_pressed()) { pump_manager.override_backward_on(); TO(ML_M2); }
+
+        WHEN(btn_plus  .is_pressed()) { 
+            pump_manager.override_forward_on();  
+            RESET_TIMER(main_loop_measuring); 
+            
+            TO(ML_P2); 
+        }
+
+        WHEN(btn_minus .is_pressed()) { 
+            pump_manager.override_backward_on(); 
+            RESET_TIMER(main_loop_measuring); 
+
+            TO(ML_M2); 
+        }
+
         WHEN(btn_start .is_pressed()) TO(ML_S2);
     }
 
     STATE(ML_C2) { 
         WHEN(btn_change.is_released()) {
+            curr_volumn_ul = 0;
+            refresh_display_meansuring(curr_volumn_ul);
+
             TO(ML_weight)
         }
     }
 
     STATE(ML_P2) {
+        refresh_display_meansuring_scheduled(
+            curr_volumn_ul + PumpStats::ms2ul(TIME_ELAPSED(main_loop_measuring))
+        );
+
         WHEN(btn_plus.is_released()) {
             pump_manager.override_off();
+            curr_volumn_ul += PumpStats::ms2ul(TIME_ELAPSED(main_loop_measuring));
             pump_manager.end_override();
+            refresh_display_meansuring(curr_volumn_ul);
 
             TO(ML_weight)
         }
     }
 
     STATE(ML_M2) {
+        refresh_display_meansuring_scheduled(
+            curr_volumn_ul - PumpStats::ms2ul(TIME_ELAPSED(main_loop_measuring))
+        );
+
         WHEN(btn_minus.is_released()) {
             pump_manager.override_off();
+            curr_volumn_ul -= PumpStats::ms2ul(TIME_ELAPSED(main_loop_measuring));
             pump_manager.end_override();
+            refresh_display_meansuring(curr_volumn_ul);
 
             TO(ML_weight)
         }
@@ -274,14 +305,28 @@ void refresh_display_brewing() {
     led_fin.off();
 }
 
-void refresh_display_brewing_scheduled()
-{
+void refresh_display_brewing_scheduled() {
     if (!IS_TIME_ELAPSED(refresh_display_brewing_scheduled_timer, 500)) {
         return;
     } 
     RESET_TIMER(refresh_display_brewing_scheduled_timer); 
 
     refresh_display_brewing();
+}
+
+void refresh_display_meansuring(long volumn_ul) {
+    display_manager.show_ml(volumn_ul / 1000);
+    led_brew.on();
+    led_fin.on();
+}
+
+void refresh_display_meansuring_scheduled(long volumn_ul) {
+    if (!IS_TIME_ELAPSED(refresh_display_meansuring_scheduled_timer, 100)) {
+        return;
+    } 
+    RESET_TIMER(refresh_display_meansuring_scheduled_timer); 
+
+    refresh_display_meansuring(volumn_ul);
 }
 
 //  +---------------------------------------------------------------------------------------------+

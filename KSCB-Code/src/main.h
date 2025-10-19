@@ -15,6 +15,7 @@
 #include "L298NSingle.h"
 #include "PumpManager.h"
 #include "PumpScheduler.h"
+#include "PumpStats.h"
 
 #define MAIN
 // #define DEBUG
@@ -93,7 +94,7 @@ bool is_showing_brewing_time_left = false;
 
 //  --- measuring sequence ---
 
-long curr_volumn_ml = 0;
+long curr_volumn_ul = 0;
 
 
 //  +---------------------------------------------------------------------------------------------+
@@ -115,6 +116,7 @@ FSM_Main_Loop state_main_loop = ML_init;
 CREATE_FSM(main_loop, ML_init);
 CREATE_TIMER(main_loop)
 CREATE_TIMER(main_loop_brewing)
+CREATE_TIMER(main_loop_measuring)
 void main_loop_update();
 
 //  +---------------------------------------------------------------------------------------------+
@@ -126,6 +128,10 @@ void refresh_display_menu();
 void refresh_display_brewing();
 void refresh_display_brewing_scheduled();   //  refresh every 500 ms. 
 CREATE_TIMER(refresh_display_brewing_scheduled_timer)
+
+void refresh_display_meansuring(long volumn_ul);
+void refresh_display_meansuring_scheduled(long volumn_ul);  //  refresh every 100 ms.
+CREATE_TIMER(refresh_display_meansuring_scheduled_timer)
 
 //  +---------------------------------------------------------------------------------------------+
 //  |                                        Autonomous                                           |

@@ -30,9 +30,10 @@ protected:
     
     void reset_timer();
 
-private:
     long scheduler_starting_time_ms;
     bool is_finished_;
+    long remaining_brewing_volumn_ul;
+    long total_brewing_time_ms;
 };
 
 #endif

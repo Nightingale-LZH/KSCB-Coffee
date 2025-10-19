@@ -22,6 +22,8 @@ void PumpSchduler::next_cycle() {
 void PumpSchduler::start_schedule(long brewing_time_ms, long brewing_volumn_ml) {
     this->reset_timer();
     this->is_finished_ = false;
+    this->total_brewing_time_ms = brewing_time_ms;
+    this->remaining_brewing_volumn_ul = brewing_volumn_ml * 1000;
 }
 
 long PumpSchduler::get_time_elapsed_ms() const {
