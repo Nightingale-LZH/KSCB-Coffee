@@ -32,6 +32,17 @@ public:
     void start_schedule(long brewing_time_ms, long brewing_volumn_ml);
     void end_schedule();
 
+    bool is_brewing_finished() const;
+
+    long get_brewing_volumn_injected_ml() const;
+    long get_brewing_volumn_remaining_ml() const;
+
+    long get_brewing_time_elapsed_ms() const;
+    long get_brewing_time_remaining_ms() const;
+
+    long get_brewing_time_elapsed_mim() const;
+    long get_brewing_time_remaining_mim() const;
+
 protected:
     void event();
 
@@ -45,8 +56,5 @@ private:
 
     CREATE_FSM(pump_manager, 0);
 };
-
-
-
 
 #endif  //  __PUMP_MANAGER_H__

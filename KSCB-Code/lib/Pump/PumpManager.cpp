@@ -79,6 +79,34 @@ void PumpManager::end_schedule() {
     this->off();
 }
 
+bool PumpManager::is_brewing_finished() const {
+    return this->pump_scheduler->is_finished();
+}
+
+long PumpManager::get_brewing_volumn_injected_ml() const {
+    return this->pump_scheduler->get_brewing_volumn_injected_ul() / 1000;
+}
+
+long PumpManager::get_brewing_volumn_remaining_ml() const {
+    return this->pump_scheduler->get_brewing_volumn_remaining_ul() / 1000;
+}
+
+long PumpManager::get_brewing_time_elapsed_ms() const {
+    return this->pump_scheduler->get_brewing_time_elapsed_ms();
+}
+
+long PumpManager::get_brewing_time_remaining_ms() const {
+    return this->pump_scheduler->get_brewing_time_remaining_ms();
+}
+
+long PumpManager::get_brewing_time_elapsed_mim() const {
+    return this->get_brewing_time_elapsed_ms() / 1000 / 60;
+}
+
+long PumpManager::get_brewing_time_remaining_mim() const {
+    return this->get_brewing_time_remaining_ms() / 1000 / 60;
+}
+
 void PumpManager::event() {
     SETUP_FSM_FUNCTION(pump_manager);
 

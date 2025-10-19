@@ -2,8 +2,7 @@
 
 #ifdef MAIN
 
-void setup() {
-}
+void setup() {}
 
 void loop() {
     main_loop_update();
@@ -112,15 +111,11 @@ void main_loop_update() {
 
     STATE(ML_brew_prep) {
         //  setup brewing schedule
-        brewing_total_time_ms = brewing_time_mins * 60 * 1000;
-        RESET_TIMER(main_loop_brewing)
-
-        brewing_volumn_left_ml = brewing_volumn_ml;
+        long brewing_total_time_ms = brewing_time_mins * 60 * 1000;
 
         is_showing_brewing_time_left = true;
         is_showing_brewing_volumn_left = false;
 
-        //  TODO: Change everything to pump manager
         pump_manager.start_schedule(brewing_total_time_ms, brewing_volumn_ml);
         refresh_display_brewing();
 
@@ -134,10 +129,12 @@ void main_loop_update() {
         WHEN(btn_plus  .is_pressed()) { pump_manager.override_forward_on();  TO(ML_P1); }
         WHEN(btn_minus .is_pressed()) { pump_manager.override_backward_on(); TO(ML_M1); }
         WHEN(btn_start .is_pressed()) { RESET_TIMER(main_loop);     TO(ML_S1); }
-        WHEN(IS_TIME_ELAPSED(main_loop_brewing, brewing_total_time_ms)) TO(ML_finish);
+        WHEN(pump_manager.is_brewing_finished()) TO(ML_finish);
     }
 
     STATE(ML_C1) { 
+        refresh_display_brewing_scheduled();
+
         WHEN(btn_change.is_released()) {
             //  switching setting item
             if (is_showing_brewing_volumn_left) {
@@ -155,6 +152,8 @@ void main_loop_update() {
     }
 
     STATE(ML_P1) {
+        refresh_display_brewing_scheduled();
+
         WHEN(btn_plus.is_released()) {
             pump_manager.override_off();
             pump_manager.end_override();
@@ -165,6 +164,8 @@ void main_loop_update() {
     }
 
     STATE(ML_M1) {
+        refresh_display_brewing_scheduled();
+
         WHEN(btn_minus.is_released()) {
             pump_manager.override_off();
             pump_manager.end_override();
@@ -283,7 +284,7 @@ void refresh_display_menu() {
 
 void refresh_display_brewing() {
     if (is_showing_brewing_time_left) {
-        long time_remaining_min = (brewing_total_time_ms - TIME_ELAPSED(main_loop_brewing)) / 1000 / 60;
+        long time_remaining_min = pump_manager.get_brewing_time_remaining_mim();
         if (time_remaining_min < 0) { 
             time_remaining_min = 0;
             display_manager.show_time_min(0, true, false);
@@ -297,8 +298,7 @@ void refresh_display_brewing() {
         }
 
     } else if (is_showing_brewing_volumn_left) {
-        //  TODO: using the pump pulse count to calculate the brewing volumn remained. 
-        display_manager.show_ml(brewing_volumn_left_ml);
+        display_manager.show_ml(pump_manager.get_brewing_volumn_remaining_ml());
     }
 
     led_brew.on();

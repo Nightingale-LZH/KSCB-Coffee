@@ -86,9 +86,6 @@ bool is_setting_time = false;
 
 //  --- brewing sequence ---
 
-long brewing_total_time_ms = 0;
-long brewing_volumn_left_ml = 0;
-
 bool is_showing_brewing_volumn_left = true;
 bool is_showing_brewing_time_left = false;
 
@@ -115,7 +112,6 @@ FSM_Main_Loop state_main_loop = ML_init;
 
 CREATE_FSM(main_loop, ML_init);
 CREATE_TIMER(main_loop)
-CREATE_TIMER(main_loop_brewing)
 CREATE_TIMER(main_loop_measuring)
 void main_loop_update();
 
