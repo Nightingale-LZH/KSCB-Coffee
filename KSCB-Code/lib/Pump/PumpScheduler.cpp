@@ -21,7 +21,8 @@ long PumpSchduler::get_off_duration_ms() const {
 }
 
 void PumpSchduler::next_cycle() {
-    if (this->get_brewing_time_elapsed_ms() <= 0) {
+    //  stop the cycle when brewing is finished
+    if (this->get_brewing_time_remaining_ms() <= 0) {
         this->set_brewing_finished();
     }
 }

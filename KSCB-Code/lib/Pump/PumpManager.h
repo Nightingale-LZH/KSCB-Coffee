@@ -44,7 +44,7 @@ public:
     long get_brewing_time_remaining_mim() const;
 
 protected:
-    void event();
+    void event() override;
 
 private:
     L298NSingle *registered_pump;

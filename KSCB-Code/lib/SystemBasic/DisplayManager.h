@@ -32,7 +32,7 @@ public:
     bool is_showing_text_segment() const;
 
 protected:
-    void event();
+    void event() override;
 
 private:
     TM1637Display *registered_display;

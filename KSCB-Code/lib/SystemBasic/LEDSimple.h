@@ -5,7 +5,7 @@
 
 class LED {
 public:
-    LED(int pin_led);
+    explicit LED(int pin_led);
     ~LED();
 
     void on();

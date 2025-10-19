@@ -49,7 +49,7 @@ protected:
 //  uniform injection with constant number of pulses
 class PumpScheduler_ConstantNumPulse: public PumpSchduler {
 public:
-    PumpScheduler_ConstantNumPulse(int n_pulse);
+    explicit PumpScheduler_ConstantNumPulse(int n_pulse);
     ~PumpScheduler_ConstantNumPulse();
 
 protected:
