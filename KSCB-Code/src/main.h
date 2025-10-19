@@ -14,11 +14,11 @@
 
 #include "L298NSingle.h"
 #include "PumpManager.h"
-#include "PumpFlowRate.h"
+#include "PumpScheduler.h"
 
-// #define MAIN
+#define MAIN
 // #define DEBUG
-#define CALIBRATE
+// #define CALIBRATE
 
 //  +---------------------------------------------------------------------------------------------+
 //  |                                              IO                                             |
@@ -64,7 +64,8 @@ TM1637Display display(PIN_TM1637_CLK, PIN_TM1637_DIO);
 DisplayManager display_manager(&display, &led_ml, &led_hr_min, TM1637_DOT_BYTECODE);
 
 L298NSingle pump(PIN_L298N_ENA, PIN_L298N_IN1, PIN_L298N_IN2);
-PumpManager pump_manager(&pump, &led_motor);
+PumpSchduler pump_scheduler;
+PumpManager pump_manager(&pump, &led_motor, &pump_scheduler);
 
 
 //  +---------------------------------------------------------------------------------------------+
@@ -86,9 +87,6 @@ bool is_setting_time = false;
 
 long brewing_total_time_ms = 0;
 long brewing_volumn_left_ml = 0;
-
-int pump_on_duration_ms = 0;
-int pump_off_duration_ms = 0;
 
 bool is_showing_brewing_volumn_left = true;
 bool is_showing_brewing_time_left = false;

@@ -21,7 +21,7 @@ void loop() {
 
 
 void main_loop_update() {
-    SETUP_FSM_FUNCTION(main_loop);
+    SETUP_FSM_FUNCTION_NO_SLEEP_FUNC(main_loop);
 
     STATE(ML_init) {
         TO(ML_idle_prep);
@@ -120,11 +120,8 @@ void main_loop_update() {
         is_showing_brewing_time_left = true;
         is_showing_brewing_volumn_left = false;
 
-        pump_on_duration_ms = get_pump_on_duration_ms(brewing_volumn_ml, brewing_time_mins);
-        pump_off_duration_ms = get_pump_off_duration_ms(brewing_volumn_ml, brewing_time_mins);
-        pump_manager.reset_pulse_count();
-        pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
-
+        //  TODO: Change everything to pump manager
+        pump_manager.start_schedule(brewing_total_time_ms, brewing_volumn_ml);
         refresh_display_brewing();
 
         TO(ML_brew)
@@ -134,8 +131,8 @@ void main_loop_update() {
         refresh_display_brewing_scheduled();
 
         WHEN(btn_change.is_pressed()) TO(ML_C1);
-        WHEN(btn_plus  .is_pressed()) { pump_manager.forward_on();  TO(ML_P1); }
-        WHEN(btn_minus .is_pressed()) { pump_manager.backward_on(); TO(ML_M1); }
+        WHEN(btn_plus  .is_pressed()) { pump_manager.override_forward_on();  TO(ML_P1); }
+        WHEN(btn_minus .is_pressed()) { pump_manager.override_backward_on(); TO(ML_M1); }
         WHEN(btn_start .is_pressed()) { RESET_TIMER(main_loop);     TO(ML_S1); }
         WHEN(IS_TIME_ELAPSED(main_loop_brewing, brewing_total_time_ms)) TO(ML_finish);
     }
@@ -159,8 +156,8 @@ void main_loop_update() {
 
     STATE(ML_P1) {
         WHEN(btn_plus.is_released()) {
-            pump_manager.off();
-            pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
+            pump_manager.override_off();
+            pump_manager.end_override();
 
             refresh_display_brewing();
             TO(ML_brew)
@@ -169,8 +166,8 @@ void main_loop_update() {
 
     STATE(ML_M1) {
         WHEN(btn_minus.is_released()) {
-            pump_manager.off();
-            pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
+            pump_manager.override_off();
+            pump_manager.end_override();
 
             refresh_display_brewing();
             TO(ML_brew)
@@ -204,8 +201,8 @@ void main_loop_update() {
 
     STATE(ML_weight) {
         WHEN(btn_change.is_pressed()) TO(ML_C2);
-        WHEN(btn_plus  .is_pressed()) { pump_manager.forward_on();  TO(ML_P2); }
-        WHEN(btn_minus .is_pressed()) { pump_manager.backward_on(); TO(ML_M2); }
+        WHEN(btn_plus  .is_pressed()) { pump_manager.override_forward_on();  TO(ML_P2); }
+        WHEN(btn_minus .is_pressed()) { pump_manager.override_backward_on(); TO(ML_M2); }
         WHEN(btn_start .is_pressed()) TO(ML_S2);
     }
 
@@ -217,8 +214,8 @@ void main_loop_update() {
 
     STATE(ML_P2) {
         WHEN(btn_plus.is_released()) {
-            pump_manager.off();
-            pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
+            pump_manager.override_off();
+            pump_manager.end_override();
 
             TO(ML_weight)
         }
@@ -226,8 +223,8 @@ void main_loop_update() {
 
     STATE(ML_M2) {
         WHEN(btn_minus.is_released()) {
-            pump_manager.off();
-            pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
+            pump_manager.override_off();
+            pump_manager.end_override();
 
             TO(ML_weight)
         }
