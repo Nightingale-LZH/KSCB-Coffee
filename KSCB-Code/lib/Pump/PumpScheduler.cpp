@@ -5,7 +5,7 @@
 //  +---------------------------------------------------------------------------------------------+
 
 PumpSchduler::PumpSchduler()
-    : scheduler_starting_time_ms(millis()), is_finished_(true)
+    : scheduler_starting_time_ms(millis()), finished(true)
     , total_brewing_volumn_ul(0), brewing_volumn_remaining_ul(0), total_brewing_time_ms(0) {
 }
 
@@ -29,7 +29,7 @@ void PumpSchduler::next_cycle() {
 
 void PumpSchduler::start_schedule(long brewing_time_ms, long brewing_volumn_ml) {
     this->reset_timer();
-    this->is_finished_ = false;
+    this->finished = false;
     this->total_brewing_time_ms = brewing_time_ms;
     this->total_brewing_volumn_ul = brewing_volumn_ml * 1000;
     this->brewing_volumn_remaining_ul = brewing_volumn_ml * 1000;
@@ -52,11 +52,11 @@ long PumpSchduler::get_brewing_volumn_remaining_ul() const {
 }
 
 bool PumpSchduler::is_finished() const {
-    return this->is_finished_;
+    return this->finished;
 }
 
 void PumpSchduler::set_brewing_finished() {
-    this->is_finished_ = true;
+    this->finished = true;
 }
 
 void PumpSchduler::reset_timer() {

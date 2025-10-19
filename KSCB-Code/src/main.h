@@ -101,7 +101,7 @@ long curr_volumn_ul = 0;
 
 enum FSM_Main_Loop {
     ML_init, 
-    ML_idle_prep, ML_idle, 
+    ML_idle_prep, ML_idle_prep_2, ML_idle, 
     ML_S0, ML_S0A, ML_C0, ML_M0, ML_P0, 
     ML_brew_prep, ML_brew, 
     ML_S1, ML_S1A, ML_C1, ML_M1, ML_P1,
@@ -117,10 +117,65 @@ CREATE_TIMER(main_loop_measuring)
 void main_loop_update();
 
 //  +---------------------------------------------------------------------------------------------+
+//  |                                  Display Strings Constants                                  |
+//  +---------------------------------------------------------------------------------------------+
+
+uint8_t SEG_PCD[] = {
+    SEG_A | SEG_B | SEG_F | SEG_G | SEG_E,  //  P
+    SEG_A | SEG_F | SEG_E | SEG_D,          //  C
+    SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,  //  d
+    0
+};
+
+uint8_t SEG_FIN[] = {
+    SEG_A | SEG_F | SEG_G | SEG_E,      //  F
+    SEG_F | SEG_E,                      //  I
+    SEG_E | SEG_G | SEG_C,              //  n
+    0
+};
+
+uint8_t SEG_STOP[] = {
+    SEG_A | SEG_F | SEG_G | SEG_C | SEG_D,          //  S
+    SEG_F | SEG_G | SEG_E | SEG_D,                  //  t
+    SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,  //  O
+    SEG_A | SEG_B | SEG_F | SEG_G | SEG_E           //  P
+};
+
+uint8_t SEG_BREW[] = {
+    SEG_F | SEG_G | SEG_E | SEG_D | SEG_C,  //  b
+    SEG_G | SEG_E,                          //  r
+    SEG_A | SEG_F | SEG_G | SEG_E | SEG_D,  //  E
+    SEG_E | SEG_D | SEG_C                   //  u
+};
+
+uint8_t SEG_CALI[] = {
+    SEG_A | SEG_F | SEG_E | SEG_D,                  //  C
+    SEG_A | SEG_F | SEG_B | SEG_G | SEG_E | SEG_C,  //  A
+    SEG_F | SEG_E | SEG_D,                          //  L
+    SEG_F | SEG_E                                   //  I
+};
+
+uint8_t SEG_PREP[] = {
+    SEG_A | SEG_B | SEG_F | SEG_G | SEG_E,  //  P
+    SEG_G | SEG_E,                          //  r
+    SEG_A | SEG_F | SEG_G | SEG_E | SEG_D,  //  E
+    SEG_A | SEG_B | SEG_F | SEG_G | SEG_E   //  P
+};
+
+uint8_t SEG_HOLD[] = {
+    SEG_B | SEG_C | SEG_E | SEG_F | SEG_G,          //  H
+    SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,  //  O
+    SEG_F | SEG_E | SEG_D,                          //  L
+    SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,          //  d
+};
+
+//  +---------------------------------------------------------------------------------------------+
 //  |                                       Helper Function                                       |
 //  +---------------------------------------------------------------------------------------------+
 
 void refresh_display_menu();
+void refresh_display_menu_scheduled();  //  refresh every 500 ms.
+CREATE_TIMER(refresh_display_menu_scheduled_timer)
 
 void refresh_display_brewing();
 void refresh_display_brewing_scheduled();   //  refresh every 500 ms. 

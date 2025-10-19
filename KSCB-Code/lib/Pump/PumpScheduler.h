@@ -37,7 +37,7 @@ protected:
     void reset_timer();
 
     long scheduler_starting_time_ms;
-    bool is_finished_;
+    bool finished;
     long total_brewing_volumn_ul;
     long brewing_volumn_remaining_ul;
     long total_brewing_time_ms;
