@@ -1,5 +1,8 @@
 #include "PumpScheduler.h"
 
+//  +---------------------------------------------------------------------------------------------+
+//  |                                         PumpSchduler                                        |
+//  +---------------------------------------------------------------------------------------------+
 
 PumpSchduler::PumpSchduler()
     : scheduler_starting_time_ms(millis()), is_finished_(true)
@@ -57,4 +60,39 @@ void PumpSchduler::set_brewing_finished() {
 
 void PumpSchduler::reset_timer() {
     this->scheduler_starting_time_ms = millis();
+}
+
+//  +---------------------------------------------------------------------------------------------+
+//  |                                PumpScheduler_ConstantNumPulse                               |
+//  +---------------------------------------------------------------------------------------------+
+
+PumpScheduler_ConstantNumPulse::PumpScheduler_ConstantNumPulse(int n_pulse)
+    : PumpSchduler()
+    , n_pulse(n_pulse), pulse_injected_volumn_ul(0), pulse_on_duration_ms(0), pulse_off_duration_ms(0) {
+}
+
+PumpScheduler_ConstantNumPulse::~PumpScheduler_ConstantNumPulse() {
+}
+
+long PumpScheduler_ConstantNumPulse::get_on_duration_ms() const {
+    return this->pulse_on_duration_ms;
+}
+
+long PumpScheduler_ConstantNumPulse::get_off_duration_ms() const {
+    return this->pulse_off_duration_ms;
+}
+
+void PumpScheduler_ConstantNumPulse::next_cycle() {
+    PumpSchduler::next_cycle();
+    this->brewing_volumn_remaining_ul -= this->pulse_injected_volumn_ul;
+}
+
+void PumpScheduler_ConstantNumPulse::start_schedule(long brewing_time_ms, long brewing_volumn_ml) {
+    PumpSchduler::start_schedule(brewing_time_ms, brewing_volumn_ml);
+
+    this->pulse_injected_volumn_ul = this->total_brewing_volumn_ul / this->n_pulse;
+    
+    long cycle_period_ms = this->total_brewing_time_ms / this->n_pulse;
+    this->pulse_on_duration_ms = PumpStats::pulse_ul2ms(this->pulse_injected_volumn_ul);
+    this->pulse_off_duration_ms = cycle_period_ms - this->pulse_on_duration_ms;
 }

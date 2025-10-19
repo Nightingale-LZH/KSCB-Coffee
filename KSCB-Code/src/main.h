@@ -65,7 +65,8 @@ TM1637Display display(PIN_TM1637_CLK, PIN_TM1637_DIO);
 DisplayManager display_manager(&display, &led_ml, &led_hr_min, TM1637_DOT_BYTECODE);
 
 L298NSingle pump(PIN_L298N_ENA, PIN_L298N_IN1, PIN_L298N_IN2);
-PumpSchduler pump_scheduler;
+
+PumpScheduler_ConstantNumPulse pump_scheduler(1000);
 PumpManager pump_manager(&pump, &led_motor, &pump_scheduler);
 
 
