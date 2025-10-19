@@ -14,10 +14,13 @@ long PumpSchduler::get_on_duration_ms() const {
 }
 
 long PumpSchduler::get_off_duration_ms() const {
-    return 95000;
+    return 9500;
 }
 
 void PumpSchduler::next_cycle() {
+    if (this->get_brewing_time_elapsed_ms() <= 0) {
+        this->set_brewing_finished();
+    }
 }
 
 void PumpSchduler::start_schedule(long brewing_time_ms, long brewing_volumn_ml) {
@@ -25,7 +28,7 @@ void PumpSchduler::start_schedule(long brewing_time_ms, long brewing_volumn_ml) 
     this->is_finished_ = false;
     this->total_brewing_time_ms = brewing_time_ms;
     this->total_brewing_volumn_ul = brewing_volumn_ml * 1000;
-    this->brewing_volumn_remaining_ul = 0;
+    this->brewing_volumn_remaining_ul = brewing_volumn_ml * 1000;
 }
 
 long PumpSchduler::get_brewing_time_elapsed_ms() const {

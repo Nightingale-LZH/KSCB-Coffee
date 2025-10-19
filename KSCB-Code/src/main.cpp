@@ -29,10 +29,10 @@ void main_loop_update() {
     //  ------- Idle -------
     STATE(ML_idle_prep) {
         //  Setting up menu
-        is_setting_volumn = true;
-        is_setting_time = false;
+        is_setting_volumn = false;
+        is_setting_time = true;
 
-        pump_manager.off();
+        pump_manager.end_schedule();
 
         refresh_display_menu();
         TO(ML_idle);
@@ -117,6 +117,8 @@ void main_loop_update() {
         is_showing_brewing_volumn_left = false;
 
         pump_manager.start_schedule(brewing_total_time_ms, brewing_volumn_ml);
+        //  manually trigger time once to activate flashing dots
+        display_manager.show_time_min(pump_manager.get_brewing_time_remaining_mim(), true, true);
         refresh_display_brewing();
 
         TO(ML_brew)
@@ -129,7 +131,7 @@ void main_loop_update() {
         WHEN(btn_plus  .is_pressed()) { pump_manager.override_forward_on();  TO(ML_P1); }
         WHEN(btn_minus .is_pressed()) { pump_manager.override_backward_on(); TO(ML_M1); }
         WHEN(btn_start .is_pressed()) { RESET_TIMER(main_loop);     TO(ML_S1); }
-        WHEN(pump_manager.is_brewing_finished()) TO(ML_finish);
+        WHEN(pump_manager.is_brewing_finished()) { pump_manager.end_schedule(); TO(ML_finish); }
     }
 
     STATE(ML_C1) { 
@@ -147,7 +149,7 @@ void main_loop_update() {
             }
 
             refresh_display_brewing();
-            TO(ML_idle)
+            TO(ML_brew)
         }
     }
 
@@ -177,7 +179,7 @@ void main_loop_update() {
 
     STATE(ML_S1) {
         WHEN(btn_start.is_released()) TO(ML_brew);
-        WHEN(IS_TIME_ELAPSED(main_loop, 3000)) TO(ML_S1A);
+        WHEN(IS_TIME_ELAPSED(main_loop, 3000)) { pump_manager.end_schedule(); TO(ML_S1A); }
     }
 
     STATE(ML_S1A) {
@@ -273,9 +275,9 @@ void main_loop_update() {
 
 void refresh_display_menu() {
     if (is_setting_volumn) {
-        display_manager.show_time_min(brewing_time_mins, true, false);
-    } else if (is_setting_time) {
         display_manager.show_ml(brewing_volumn_ml);
+    } else if (is_setting_time) {
+        display_manager.show_time_min(brewing_time_mins, true, false);
     }
 
     led_brew.off();

@@ -15,9 +15,9 @@ public:
     ~PumpSchduler();
 
 protected:
-    long get_on_duration_ms() const;
-    long get_off_duration_ms() const;
-    void next_cycle();
+    virtual long get_on_duration_ms() const;
+    virtual long get_off_duration_ms() const;
+    virtual void next_cycle();
     
     //  this should be called by pump manager
     void start_schedule(long brewing_time_ms, long brewing_volumn_ml);

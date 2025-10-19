@@ -1,7 +1,7 @@
 #include "PumpManager.h"
 
 PumpManager::PumpManager(L298NSingle *register_pump, LED *led_pump_indicator, PumpSchduler *pump_scheduler)
-    : SchedulerFSM(1)
+    : Scheduler(1)
     , registered_pump(register_pump), pump_led(led_pump_indicator), pump_scheduler(pump_scheduler)
     , is_pump_override_on(false) {
 
@@ -70,12 +70,11 @@ void PumpManager::end_override() {
 
 void PumpManager::start_schedule(long brewing_time_ms, long brewing_volumn_ml) {
     this->pump_scheduler->start_schedule(brewing_time_ms, brewing_volumn_ml);
-    this->fsm_start();
     RESET_FSM(pump_manager)
 }
 
 void PumpManager::end_schedule() {
-    this->fsm_finished();
+    this->pump_scheduler->set_brewing_finished();
     this->off();
 }
 
@@ -117,7 +116,7 @@ void PumpManager::event() {
         }
 
         if (this->pump_scheduler->is_finished()) {
-            this->fsm_finished();
+            TO(2);
         } else {
             SLEEP_TO_NEXT(this->pump_scheduler->get_off_duration_ms());
         }
@@ -125,6 +124,10 @@ void PumpManager::event() {
 
     //  pump on state
     STATE(1) {
+        if (this->pump_scheduler->is_finished()) {
+            TO(2);
+        }
+        
         if (!this->is_pump_override_on) {
             this->forward_on();
         }
@@ -132,6 +135,10 @@ void PumpManager::event() {
         long on_duration_ms = this->pump_scheduler->get_on_duration_ms();
         this->pump_scheduler->next_cycle();
         SLEEP_TO(on_duration_ms, 0);
+    }
+
+    STATE(2) {
+        //  FINISHED state, doing nothing
     }
 }
 

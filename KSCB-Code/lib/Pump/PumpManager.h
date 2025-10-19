@@ -9,7 +9,7 @@
 
 class PumpSchduler;     //  forward declaration, we don't know which header file will be initialized first
 
-class PumpManager: public SchedulerFSM {
+class PumpManager: public Scheduler {
 public:
     PumpManager(L298NSingle *register_pump, LED *led_pump_indicator, PumpSchduler *pump_scheduler);
     ~PumpManager();
