@@ -2,8 +2,7 @@
 
 #ifdef MAIN
 
-void setup() {
-}
+void setup() {}
 
 void loop() {
     main_loop_update();
@@ -24,26 +23,48 @@ void main_loop_update() {
     SETUP_FSM_FUNCTION(main_loop);
 
     STATE(ML_init) {
-        TO(ML_idle_prep);
+        display_manager.show_segment(SEG_PCD);
+        SLEEP_TO(1000, ML_init_2);
+    }
+
+    STATE(ML_init_2) {
+        display_manager.show_segment(SEG_ZLIU);
+        SLEEP_TO(1500, ML_idle_prep);
     }
 
     //  ------- Idle -------
     STATE(ML_idle_prep) {
-        //  Setting up menu
-        is_setting_volumn = true;
-        is_setting_time = false;
+        pump_manager.end_schedule();
+        display_manager.show_segment(SEG_empty_str);
+        SLEEP_TO(500, ML_idle_prep_2);
+    }
 
-        pump_manager.off();
+    STATE(ML_idle_prep_2) {
+        pump_manager.end_schedule();
+        display_manager.show_segment(SEG_PREP);
+        SLEEP_TO(1000, ML_idle_prep_3);
+    }
+
+    STATE(ML_idle_prep_3) {
+        //  Setting up menu
+        is_setting_volumn = false;
+        is_setting_time = true;
 
         refresh_display_menu();
         TO(ML_idle);
     }
 
     STATE(ML_idle) {
+        refresh_display_menu_scheduled();
         WHEN(btn_change.is_pressed()) TO(ML_C0);
         WHEN(btn_plus  .is_pressed()) TO(ML_P0);
         WHEN(btn_minus .is_pressed()) TO(ML_M0);
-        WHEN(btn_start .is_pressed()) { RESET_TIMER(main_loop); TO(ML_S0); }
+        WHEN(btn_start .is_pressed()) { 
+            display_manager.show_segment(SEG_BREW);
+            RESET_TIMER(main_loop); 
+
+            TO(ML_S0); 
+        }
     }
 
     STATE(ML_C0) {
@@ -101,7 +122,10 @@ void main_loop_update() {
 
     STATE(ML_S0) {
         WHEN(btn_start.is_released()) TO(ML_brew_prep);
-        WHEN(IS_TIME_ELAPSED(main_loop, 3000)) TO(ML_S0A);
+        WHEN(IS_TIME_ELAPSED(main_loop, 3000)) {
+            display_manager.show_segment(SEG_CALI);
+            TO(ML_S0A);
+        }
     }
 
     STATE(ML_S0A) {
@@ -112,19 +136,14 @@ void main_loop_update() {
 
     STATE(ML_brew_prep) {
         //  setup brewing schedule
-        brewing_total_time_ms = brewing_time_mins * 60 * 1000;
-        RESET_TIMER(main_loop_brewing)
-
-        brewing_volumn_left_ml = brewing_volumn_ml;
+        long brewing_total_time_ms = brewing_time_mins * 60 * 1000;
 
         is_showing_brewing_time_left = true;
         is_showing_brewing_volumn_left = false;
 
-        pump_on_duration_ms = get_pump_on_duration_ms(brewing_volumn_ml, brewing_time_mins);
-        pump_off_duration_ms = get_pump_off_duration_ms(brewing_volumn_ml, brewing_time_mins);
-        pump_manager.reset_pulse_count();
-        pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
-
+        pump_manager.start_schedule(brewing_total_time_ms, brewing_volumn_ml);
+        //  manually trigger time once to activate flashing dots
+        display_manager.show_time_min(pump_manager.get_brewing_time_remaining_mim(), true, true);
         refresh_display_brewing();
 
         TO(ML_brew)
@@ -134,13 +153,26 @@ void main_loop_update() {
         refresh_display_brewing_scheduled();
 
         WHEN(btn_change.is_pressed()) TO(ML_C1);
-        WHEN(btn_plus  .is_pressed()) { pump_manager.forward_on();  TO(ML_P1); }
-        WHEN(btn_minus .is_pressed()) { pump_manager.backward_on(); TO(ML_M1); }
-        WHEN(btn_start .is_pressed()) { RESET_TIMER(main_loop);     TO(ML_S1); }
-        WHEN(IS_TIME_ELAPSED(main_loop_brewing, brewing_total_time_ms)) TO(ML_finish);
+        WHEN(btn_plus  .is_pressed()) { pump_manager.override_forward_on();  TO(ML_P1); }
+        WHEN(btn_minus .is_pressed()) { pump_manager.override_backward_on(); TO(ML_M1); }
+        WHEN(btn_start .is_pressed()) { 
+            display_manager.show_segment(SEG_HOLD);
+            RESET_TIMER(main_loop);     
+
+            TO(ML_S1); 
+        }
+        WHEN(pump_manager.is_brewing_finished()) { 
+            display_manager.show_segment(SEG_FIN);
+            pump_manager.end_schedule(); 
+            pump_manager.backward_on();
+
+            SLEEP_TO(ML_finish, 15000); 
+        }
     }
 
     STATE(ML_C1) { 
+        refresh_display_brewing_scheduled();
+
         WHEN(btn_change.is_released()) {
             //  switching setting item
             if (is_showing_brewing_volumn_left) {
@@ -153,14 +185,16 @@ void main_loop_update() {
             }
 
             refresh_display_brewing();
-            TO(ML_idle)
+            TO(ML_brew)
         }
     }
 
     STATE(ML_P1) {
+        refresh_display_brewing_scheduled();
+
         WHEN(btn_plus.is_released()) {
-            pump_manager.off();
-            pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
+            pump_manager.override_off();
+            pump_manager.end_override();
 
             refresh_display_brewing();
             TO(ML_brew)
@@ -168,9 +202,11 @@ void main_loop_update() {
     }
 
     STATE(ML_M1) {
+        refresh_display_brewing_scheduled();
+
         WHEN(btn_minus.is_released()) {
-            pump_manager.off();
-            pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
+            pump_manager.override_off();
+            pump_manager.end_override();
 
             refresh_display_brewing();
             TO(ML_brew)
@@ -178,8 +214,17 @@ void main_loop_update() {
     }
 
     STATE(ML_S1) {
-        WHEN(btn_start.is_released()) TO(ML_brew);
-        WHEN(IS_TIME_ELAPSED(main_loop, 3000)) TO(ML_S1A);
+        WHEN(btn_start.is_released()) {
+            refresh_display_brewing();
+
+            TO(ML_brew);
+        }
+        WHEN(IS_TIME_ELAPSED(main_loop, 3000)) { 
+            display_manager.show_segment(SEG_STOP);
+            pump_manager.end_schedule(); 
+
+            TO(ML_S1A); 
+        }
     }
 
     STATE(ML_S1A) {
@@ -187,6 +232,14 @@ void main_loop_update() {
     }
 
     STATE(ML_finish) {
+        pump_manager.off();
+        led_brew.off();
+        led_fin.on();
+
+        TO(ML_finish_2)
+    }
+
+    STATE(ML_finish_2) {
         WHEN(btn_start.is_pressed()) TO(ML_finish_A);
     }
 
@@ -195,39 +248,70 @@ void main_loop_update() {
     }
 
     //  ------- Weighting -------
-    // TODO: Adding measuring function
 
     STATE(ML_weight_prep) {
+        curr_volumn_ul = 0;
+        refresh_display_meansuring(curr_volumn_ul);
 
         TO(ML_weight)
     }
 
     STATE(ML_weight) {
+        refresh_display_meansuring_scheduled(curr_volumn_ul);
+
         WHEN(btn_change.is_pressed()) TO(ML_C2);
-        WHEN(btn_plus  .is_pressed()) { pump_manager.forward_on();  TO(ML_P2); }
-        WHEN(btn_minus .is_pressed()) { pump_manager.backward_on(); TO(ML_M2); }
+
+        WHEN(btn_plus  .is_pressed()) { 
+            pump_manager.override_forward_on();  
+            RESET_TIMER(main_loop_measuring); 
+            
+            TO(ML_P2); 
+        }
+
+        WHEN(btn_minus .is_pressed()) { 
+            pump_manager.override_backward_on(); 
+            RESET_TIMER(main_loop_measuring); 
+
+            TO(ML_M2); 
+        }
+
         WHEN(btn_start .is_pressed()) TO(ML_S2);
     }
 
     STATE(ML_C2) { 
         WHEN(btn_change.is_released()) {
+            curr_volumn_ul = 0;
+            refresh_display_meansuring(curr_volumn_ul);
+
             TO(ML_weight)
         }
     }
 
     STATE(ML_P2) {
+        refresh_display_meansuring_scheduled(
+            curr_volumn_ul + PumpStats::ms2ul(TIME_ELAPSED(main_loop_measuring))
+        );
+
         WHEN(btn_plus.is_released()) {
-            pump_manager.off();
-            pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
+            pump_manager.override_off();
+            curr_volumn_ul += PumpStats::ms2ul(TIME_ELAPSED(main_loop_measuring));
+            pump_manager.end_override();
+            refresh_display_meansuring(curr_volumn_ul);
 
             TO(ML_weight)
         }
     }
 
     STATE(ML_M2) {
+        refresh_display_meansuring_scheduled(
+            curr_volumn_ul - PumpStats::ms2ul(TIME_ELAPSED(main_loop_measuring))
+        );
+
         WHEN(btn_minus.is_released()) {
-            pump_manager.off();
-            pump_manager.forward_on_pulse(pump_on_duration_ms, pump_off_duration_ms);
+            pump_manager.override_off();
+            curr_volumn_ul -= PumpStats::ms2ul(TIME_ELAPSED(main_loop_measuring));
+            pump_manager.end_override();
+            refresh_display_meansuring(curr_volumn_ul);
 
             TO(ML_weight)
         }
@@ -244,18 +328,27 @@ void main_loop_update() {
 
 void refresh_display_menu() {
     if (is_setting_volumn) {
-        display_manager.show_time_min(brewing_time_mins, true, false);
-    } else if (is_setting_time) {
         display_manager.show_ml(brewing_volumn_ml);
+    } else if (is_setting_time) {
+        display_manager.show_time_min(brewing_time_mins, true, false);
     }
 
     led_brew.off();
     led_fin.off();
 }
 
+void refresh_display_menu_scheduled() {
+    if (!IS_TIME_ELAPSED(refresh_display_menu_scheduled_timer, 500)) {
+        return;
+    } 
+    RESET_TIMER(refresh_display_menu_scheduled_timer); 
+
+    refresh_display_menu();
+}
+
 void refresh_display_brewing() {
     if (is_showing_brewing_time_left) {
-        long time_remaining_min = (brewing_total_time_ms - TIME_ELAPSED(main_loop_brewing)) / 1000 / 60;
+        long time_remaining_min = pump_manager.get_brewing_time_remaining_mim();
         if (time_remaining_min < 0) { 
             time_remaining_min = 0;
             display_manager.show_time_min(0, true, false);
@@ -269,22 +362,35 @@ void refresh_display_brewing() {
         }
 
     } else if (is_showing_brewing_volumn_left) {
-        //  TODO: using the pump pulse count to calculate the brewing volumn remained. 
-        display_manager.show_ml(brewing_volumn_left_ml);
+        display_manager.show_ml(pump_manager.get_brewing_volumn_remaining_ml());
     }
 
     led_brew.on();
     led_fin.off();
 }
 
-void refresh_display_brewing_scheduled()
-{
+void refresh_display_brewing_scheduled() {
     if (!IS_TIME_ELAPSED(refresh_display_brewing_scheduled_timer, 500)) {
         return;
     } 
     RESET_TIMER(refresh_display_brewing_scheduled_timer); 
 
     refresh_display_brewing();
+}
+
+void refresh_display_meansuring(long volumn_ul) {
+    display_manager.show_ml(volumn_ul / 1000);
+    led_brew.on();
+    led_fin.on();
+}
+
+void refresh_display_meansuring_scheduled(long volumn_ul) {
+    if (!IS_TIME_ELAPSED(refresh_display_meansuring_scheduled_timer, 100)) {
+        return;
+    } 
+    RESET_TIMER(refresh_display_meansuring_scheduled_timer); 
+
+    refresh_display_meansuring(volumn_ul);
 }
 
 //  +---------------------------------------------------------------------------------------------+

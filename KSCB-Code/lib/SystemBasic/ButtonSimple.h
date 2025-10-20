@@ -6,7 +6,7 @@
 //  default as pull-up
 class Button {
 public:
-    Button(int pin_btn);
+    explicit Button(int pin_btn);
     ~Button();
 
     bool is_pressed();

@@ -6,7 +6,7 @@ DisplayManager::DisplayManager(TM1637Display *register_display, LED *unit_ml, LE
     , dot_bytecode(dot_bytecode), is_dot_flashing(false), hours(0), mins(0), is_dot_on(0)
     , showing_volumn(false), showing_time(false), showing_text_segment(false) {
 
-    registered_display->setBrightness(7);
+    registered_display->setBrightness(4);
 }
 
 DisplayManager::~DisplayManager() {

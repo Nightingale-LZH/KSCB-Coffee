@@ -14,11 +14,12 @@
 
 #include "L298NSingle.h"
 #include "PumpManager.h"
-#include "PumpFlowRate.h"
+#include "PumpScheduler.h"
+#include "PumpStats.h"
 
-// #define MAIN
+#define MAIN
 // #define DEBUG
-#define CALIBRATE
+// #define CALIBRATE
 
 //  +---------------------------------------------------------------------------------------------+
 //  |                                              IO                                             |
@@ -64,7 +65,9 @@ TM1637Display display(PIN_TM1637_CLK, PIN_TM1637_DIO);
 DisplayManager display_manager(&display, &led_ml, &led_hr_min, TM1637_DOT_BYTECODE);
 
 L298NSingle pump(PIN_L298N_ENA, PIN_L298N_IN1, PIN_L298N_IN2);
-PumpManager pump_manager(&pump, &led_motor);
+
+PumpScheduler_ConstantNumPulse pump_scheduler(1000);
+PumpManager pump_manager(&pump, &led_motor, &pump_scheduler);
 
 
 //  +---------------------------------------------------------------------------------------------+
@@ -77,25 +80,19 @@ PumpManager pump_manager(&pump, &led_motor);
 #define BREWING_TIME_INCREMENT_MINS 30
 
 long brewing_volumn_ml = 500;
-long brewing_time_mins = 300;
+long brewing_time_mins = 480;
 
 bool is_setting_volumn = true;
 bool is_setting_time = false;
 
 //  --- brewing sequence ---
 
-long brewing_total_time_ms = 0;
-long brewing_volumn_left_ml = 0;
-
-int pump_on_duration_ms = 0;
-int pump_off_duration_ms = 0;
-
 bool is_showing_brewing_volumn_left = true;
 bool is_showing_brewing_time_left = false;
 
 //  --- measuring sequence ---
 
-long curr_volumn_ml = 0;
+long curr_volumn_ul = 0;
 
 
 //  +---------------------------------------------------------------------------------------------+
@@ -103,12 +100,12 @@ long curr_volumn_ml = 0;
 //  +---------------------------------------------------------------------------------------------+
 
 enum FSM_Main_Loop {
-    ML_init, 
-    ML_idle_prep, ML_idle, 
+    ML_init, ML_init_2, 
+    ML_idle_prep, ML_idle_prep_2, ML_idle_prep_3, ML_idle, 
     ML_S0, ML_S0A, ML_C0, ML_M0, ML_P0, 
     ML_brew_prep, ML_brew, 
     ML_S1, ML_S1A, ML_C1, ML_M1, ML_P1,
-    ML_finish, ML_finish_A, 
+    ML_finish, ML_finish_2, ML_finish_A, 
     ML_weight_prep, ML_weight,
     ML_S2, ML_S2A, ML_C2, ML_M2, ML_P2
 };
@@ -116,18 +113,86 @@ FSM_Main_Loop state_main_loop = ML_init;
 
 CREATE_FSM(main_loop, ML_init);
 CREATE_TIMER(main_loop)
-CREATE_TIMER(main_loop_brewing)
+CREATE_TIMER(main_loop_measuring)
 void main_loop_update();
+
+//  +---------------------------------------------------------------------------------------------+
+//  |                                  Display Strings Constants                                  |
+//  +---------------------------------------------------------------------------------------------+
+
+uint8_t SEG_empty_str[] = {0, 0, 0, 0};
+
+uint8_t SEG_ZLIU[] = {
+    SEG_A | SEG_B | SEG_G | SEG_E | SEG_D,          //  Z
+    SEG_F | SEG_E | SEG_D,                          //  L
+    SEG_F | SEG_E,                                  //  I
+    SEG_F | SEG_E | SEG_D | SEG_D | SEG_C | SEG_B   //  U
+};
+
+uint8_t SEG_PCD[] = {
+    SEG_A | SEG_B | SEG_F | SEG_G | SEG_E,  //  P
+    SEG_A | SEG_F | SEG_E | SEG_D,          //  C
+    SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,  //  d
+    0
+};
+
+uint8_t SEG_FIN[] = {
+    SEG_A | SEG_F | SEG_G | SEG_E,      //  F
+    SEG_F | SEG_E,                      //  I
+    SEG_E | SEG_G | SEG_C,              //  n
+    0
+};
+
+uint8_t SEG_STOP[] = {
+    SEG_A | SEG_F | SEG_G | SEG_C | SEG_D,          //  S
+    SEG_F | SEG_G | SEG_E | SEG_D,                  //  t
+    SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,  //  O
+    SEG_A | SEG_B | SEG_F | SEG_G | SEG_E           //  P
+};
+
+uint8_t SEG_BREW[] = {
+    SEG_F | SEG_G | SEG_E | SEG_D | SEG_C,  //  b
+    SEG_G | SEG_E,                          //  r
+    SEG_A | SEG_F | SEG_G | SEG_E | SEG_D,  //  E
+    SEG_E | SEG_D | SEG_C                   //  u
+};
+
+uint8_t SEG_CALI[] = {
+    SEG_A | SEG_F | SEG_E | SEG_D,                  //  C
+    SEG_A | SEG_F | SEG_B | SEG_G | SEG_E | SEG_C,  //  A
+    SEG_F | SEG_E | SEG_D,                          //  L
+    SEG_F | SEG_E                                   //  I
+};
+
+uint8_t SEG_PREP[] = {
+    SEG_A | SEG_B | SEG_F | SEG_G | SEG_E,  //  P
+    SEG_G | SEG_E,                          //  r
+    SEG_A | SEG_F | SEG_G | SEG_E | SEG_D,  //  E
+    SEG_A | SEG_B | SEG_F | SEG_G | SEG_E   //  P
+};
+
+uint8_t SEG_HOLD[] = {
+    SEG_B | SEG_C | SEG_E | SEG_F | SEG_G,          //  H
+    SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,  //  O
+    SEG_F | SEG_E | SEG_D,                          //  L
+    SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,          //  d
+};
 
 //  +---------------------------------------------------------------------------------------------+
 //  |                                       Helper Function                                       |
 //  +---------------------------------------------------------------------------------------------+
 
 void refresh_display_menu();
+void refresh_display_menu_scheduled();  //  refresh every 500 ms.
+CREATE_TIMER(refresh_display_menu_scheduled_timer)
 
 void refresh_display_brewing();
 void refresh_display_brewing_scheduled();   //  refresh every 500 ms. 
 CREATE_TIMER(refresh_display_brewing_scheduled_timer)
+
+void refresh_display_meansuring(long volumn_ul);
+void refresh_display_meansuring_scheduled(long volumn_ul);  //  refresh every 100 ms.
+CREATE_TIMER(refresh_display_meansuring_scheduled_timer)
 
 //  +---------------------------------------------------------------------------------------------+
 //  |                                        Autonomous                                           |

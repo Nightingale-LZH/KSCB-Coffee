@@ -70,7 +70,7 @@ protected:
 //      but event will be a finite state machine style code with multiple entry. 
 class SchedulerFSM: public Scheduler {
 public:
-    SchedulerFSM(unsigned long refresh_period_us);
+    explicit SchedulerFSM(unsigned long refresh_period_us);
     ~SchedulerFSM();
 
     //  Call event() on given schedule/interval
