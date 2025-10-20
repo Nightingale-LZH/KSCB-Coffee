@@ -80,7 +80,7 @@ PumpManager pump_manager(&pump, &led_motor, &pump_scheduler);
 #define BREWING_TIME_INCREMENT_MINS 30
 
 long brewing_volumn_ml = 500;
-long brewing_time_mins = 300;
+long brewing_time_mins = 480;
 
 bool is_setting_volumn = true;
 bool is_setting_time = false;
@@ -100,12 +100,12 @@ long curr_volumn_ul = 0;
 //  +---------------------------------------------------------------------------------------------+
 
 enum FSM_Main_Loop {
-    ML_init, 
-    ML_idle_prep, ML_idle_prep_2, ML_idle, 
+    ML_init, ML_init_2, 
+    ML_idle_prep, ML_idle_prep_2, ML_idle_prep_3, ML_idle, 
     ML_S0, ML_S0A, ML_C0, ML_M0, ML_P0, 
     ML_brew_prep, ML_brew, 
     ML_S1, ML_S1A, ML_C1, ML_M1, ML_P1,
-    ML_finish, ML_finish_A, 
+    ML_finish, ML_finish_2, ML_finish_A, 
     ML_weight_prep, ML_weight,
     ML_S2, ML_S2A, ML_C2, ML_M2, ML_P2
 };
@@ -119,6 +119,15 @@ void main_loop_update();
 //  +---------------------------------------------------------------------------------------------+
 //  |                                  Display Strings Constants                                  |
 //  +---------------------------------------------------------------------------------------------+
+
+uint8_t SEG_empty_str[] = {0, 0, 0, 0};
+
+uint8_t SEG_ZLIU[] = {
+    SEG_A | SEG_B | SEG_G | SEG_E | SEG_D,          //  Z
+    SEG_F | SEG_E | SEG_D,                          //  L
+    SEG_F | SEG_E,                                  //  I
+    SEG_F | SEG_E | SEG_D | SEG_D | SEG_C | SEG_B   //  U
+};
 
 uint8_t SEG_PCD[] = {
     SEG_A | SEG_B | SEG_F | SEG_G | SEG_E,  //  P
